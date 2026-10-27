@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kvíz o živote</title>
+<style>
+  @keyframes pozadie {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: linear-gradient(-45deg, #ff6a88, #7c5cff, #2ecc71, #ffc857);
+    background-size: 400% 400%;
+    animation: pozadie 12s ease infinite;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px 0;
+    box-sizing: border-box;
+  }
+  .card {
+    background: rgba(20, 20, 35, 0.88);
+    padding: 24px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  h2 { margin-top: 0; font-size: 22px; }
+  #casovac { font-size: 20px; font-weight: bold; color: #ffc857; }
+  button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin: 10px 0;
+    font-size: 17px;
+    border: none;
+    border-radius: 10px;
+    background: #7c5cff;
+    color: #fff;
+    cursor: pointer;
+  }
+  button:active { opacity: 0.7; }
+  .correct { background: #2ecc71 !important; }
+  .wrong { background: #e74c3c !important; }
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 17px;
+    border-radius: 10px;
+    border: none;
+    box-sizing: border-box;
+    margin-top: 8px;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 16px; }
+  th, td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+  .skryte { display: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2 id="otazka"></h2>
+  <p id="casovac"></p>
+  <div id="moznosti"></div>
+  <p id="skore"></p>
+
+  <div id="koniec" class="skryte">
+    <p id="vysledok"></p>
+    <input id="meno" placeholder="Tvoje meno" maxlength="15">
+    <button id="ulozBtn">Uložiť do rebríčka</button>
+  </div>
+
+  <div id="rebricek" class="skryte">
+    <h2>🏆 Rebríček (Top 10)</h2>
+    <table>
+      <thead><tr><th>#</th><th>Meno</th><th>Body</th></tr></thead>
+      <tbody id="telo"></tbody>
+    </table>
+    <button id="znova">Hrať znova</button>
+  </div>
+</div>
+
+<script>
+  const otazky = [
+    { text: "Čo sa najčastejšie stratí v práčke?", moznosti: ["Ponožka", "Kľúče", "Telefón"], spravna: 0 },
+    { text: "Čo znamená „Ok.“ s bodkou od kamaráta?", moznosti: ["Je nahnevaný", "Je v pohode", "Má pauzu"], spravna: 0 },
+    { text: "Ktorý pondelok je najťažší?", moznosti: ["Ten pred výplatou", "Ten prvý v roku", "Ten po dovolenke"], spravna: 2 },
+    { text: "Čo najrýchlejšie zrýchli Wi-Fi?", moznosti: ["Pohroziť mu", "Reštartovať router", "Kúpiť nový kábel"], spravna: 1 },
+    { text: "Prečo otvárame chladničku, aj keď vieme, že tam nič nie je?", moznosti: ["Hľadáme niečo", "Dúfame v zázrak", "Zahrievame sa"], spravna: 1 },
+    { text: "Koľko sekúnd je podľa „päťsekundového pravidla“ ok zjesť spadnutý kúsok jedla?", moznosti: ["5", "10", "Do obeda"], spravna: 0 },
+    { text: "Čo najviac nenávidíš v rade v obchode?", moznosti: ["Pokladníčku", "Človeka pred sebou, ktorý platí mincami", "Reklamy"], spravna: 1 },
+    { text: "Kedy najčastejšie nájdeš stratený kľúč?", moznosti: ["Keď ho hľadáš", "Keď si už kúpil nový", "Keď sa upokojíš"], spravna: 1 },
+    { text: "Čo povieš, keď ti niekto povie „len sa pozri“?", moznosti: ["Dobre, pozriem", "Do riti, zase niečo", "Ani sa nepozerám"], spravna: 1 },
+    { text: "Ktorý zvuk je v byte najhorší?", moznosti: ["Dážď", "Komár o tretej ráno", "Hudba suseda"], spravna: 1 },
+    { text: "Koľko lyžičiek cukru dáš do kávy, keď si na diéte?", moznosti: ["Nula, ale vieš čo", "Dve", "Tri"], spravna: 0 },
+    { text: "Čo urobíš, keď nožnice nevedia otvoriť obal?", moznosti: ["Nič, vzdáš to", "Skúsiš to zubami", "Kúpiš si nový obal"], spravna: 1 },
+    { text: "Kedy si najlepší kuchár?", moznosti: ["Keď varíš pre seba", "Keď objednávaš jedlo", "Keď sa len tváriš"], spravna: 1 },
+    { text: "Koľko minút trvá, kým sa v rade na poštu dostaneš k okienku?", moznosti: ["5", "20", "Celé popoludnie"], spravna: 2 },
+    { text: "Čo je najlepší spôsob, ako sa vyhnúť ranným hovorom od šéfa?", moznosti: ["Vypnúť mobil", "Zdvihnúť a hovoriť zvláštne", "Spať dlhšie"], spravna: 0 },
+    { text: "Koľko času za život stratí priemerný človek hľadaním diaľkového ovládača?", moznosti: ["Pár sekúnd", "Asi pol hodiny", "Celý víkend"], spravna: 1 },
+    { text: "Čo znamená „ešte jeden diel“?", moznosti: ["Plán na večer", "Plán na celú noc", "Ponaučenie"], spravna: 1 },
+    { text: "Čo urobíš, keď ti v MHD nikto neuvoľní miesto?", moznosti: ["Nič, mlčíš", "Hodíš vyhrážku a sedíš ďalej", "Začneš rozprávať s babkou"], spravna: 2 },
+    { text: "Ktorý vynález by si najviac chcel mať?", moznosti: ["Nafukovacie dvere", "Auto, ktoré zaparkuje samo", "Nechápem otázku"], spravna: 1 },
+    { text: "Prečo ľudia kupujú veci len preto, že sú v akcii?", moznosti: ["Lebo je to výhodné", "Lebo nevedia, čo chcú", "Lebo sú v akcii"], spravna: 2 },
+    { text: "Čo najčastejšie povieš, keď sa ťa niekto spýta, či si v pohode?", moznosti: ["Som v pohode", "Ani náhodou", "Idem spať"], spravna: 0 },
+    { text: "Čo sa na mobile najrýchlejšie vybije?", moznosti: ["Batéria", "Trpezlivosť", "Dáta"], spravna: 1 },
+    { text: "Čo sa stane, keď zlyhá nábytok, ktorý si skladal podľa návodu?", moznosti: ["Nič", "Prečítaš si návod ešte raz", "Zostane ti jeden šrób navyše"], spravna: 2 },
+    { text: "Čo najčastejšie zabudneš, keď odchádzaš z domu?", moznosti: ["Kľúče", "Lístok", "Psa"], spravna: 0 },
+    { text: "Aká je najlepšia výhovorka, keď meškáš?", moznosti: ["Dopravná zápcha", "Vesmírna anomália", "Nemal som budík"], spravna: 0 }
+  ];
+
+  const CAS_NA_OTAZKU = 20;
+  const KLUC = "zivotKvizRebricek";
+
+  let aktualna = 0;
+  let skore = 0;
+  let casovac = null;
+  let zostavajuce = CAS_NA_OTAZKU;
+
+  const otazkaEl = document.getElementById("otazka");
+  const moznostiEl = document.getElementById("moznosti");
+  const skoreEl = document.getElementById("skore");
+  const casovacEl = document.getElementById("casovac");
+  const konecEl = document.getElementById("koniec");
+  const vysledokEl = document.getElementById("vysledok");
+  const menoEl = document.getElementById("meno");
+  const ulozBtn = document.getElementById("ulozBtn");
+  const rebricekEl = document.getElementById("rebricek");
+  const teloEl = document.getElementById("telo");
+  const znovaBtn = document.getElementById("znova");
+
+  function nacitajRebricek() {
+    try {
+      return JSON.parse(localStorage.getItem(KLUC)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function ulozRebricek(zoznam) {
+    try {
+      localStorage.setItem(KLUC, JSON.stringify(zoznam));
+    } catch (e) {}
+  }
+
+  function zobrazOtazku() {
+    const o = otazky[aktualna];
+    otazkaEl.textContent = `${aktualna + 1}/${otazky.length}: ${o.text}`;
+    moznostiEl.innerHTML = "";
+    skoreEl.textContent = "";
+
+    o.moznosti.forEach((text, i) => {
+      const btn = document.createElement("button");
+      btn.textContent = text;
+      btn.onclick = () => odpovedz(i, btn);
+      moznostiEl.appendChild(btn);
+    });
+
+    spustiCasovac();
+  }
+
+  function spustiCasovac() {
+    clearInterval(casovac);
+    zostavajuce = CAS_NA_OTAZKU;
+    casovacEl.textContent = `Čas: ${zostavajuce} s`;
+
+    casovac = setInterval(() => {
+      zostavajuce--;
+      casovacEl.textContent = `Čas: ${zostavajuce} s`;
+      if (zostavajuce <= 0) {
+        clearInterval(casovac);
+        odpovedz(-1, null);
+      }
+    }, 1000);
+  }
+
+  function odpovedz(index, btn) {
+    clearInterval(casovac);
+    const o = otazky[aktualna];
+    const buttons = moznostiEl.querySelectorAll("button");
+    buttons.forEach(b => b.disabled = true);
+
+    if (index === o.spravna) {
+      if (btn) btn.classList.add("correct");
+      skore++;
+    } else {
+      if (btn) btn.classList.add("wrong");
+      buttons[o.spravna].classList.add("correct");
+    }
+
+    setTimeout(() => {
+      aktualna++;
+      if (aktualna < otazky.length) {
+        zobrazOtazku();
+      } else {
+        koniec();
+      }
+    }, 1000);
+  }
+
+  function koniec() {
+    clearInterval(casovac);
+    otazkaEl.textContent = "Koniec kvízu!";
+    casovacEl.textContent = "";
+    moznostiEl.innerHTML = "";
+    skoreEl.textContent = "";
+    vysledokEl.textContent = `Máš ${skore} z ${otazky.length} správne.`;
+    menoEl.value = "";
+    ulozBtn.disabled = false;
+    konecEl.style.display = "block";
+    rebricekEl.style.display = "none";
+  }
+
+  function zobrazRebricek() {
+    const zoznam = nacitajRebricek();
+    teloEl.innerHTML = "";
+    zoznam.slice(0, 10).forEach((z, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${i + 1}.</td><td></td><td>${z.body}</td>`;
+      tr.children[1].textContent = z.meno;
+      teloEl.appendChild(tr);
+    });
+    konecEl.style.display = "none";
+    rebricekEl.style.display = "block";
+  }
+
+  ulozBtn.onclick = () => {
+    const meno = menoEl.value.trim() || "Anonym";
+    const zoznam = nacitajRebricek();
+    zoznam.push({ meno: meno, body: skore });
+    zoznam.sort((a, b) => b.body - a.body);
+    ulozRebricek(zoznam.slice(0, 10));
+    ulozBtn.disabled = true;
+    zobrazRebricek();
+  };
+
+  znovaBtn.onclick = () => {
+    aktualna = 0;
+    skore = 0;
+    rebricekEl.style.display = "none";
+    zobrazOtazku();
+  };
+
+  konecEl.style.display = "none";
+  rebricekEl.style.display = "none";
+  zobrazOtazku();
+</script>
+</body>
+</html>
